@@ -20,7 +20,7 @@ jobs:
 
       - name: Install Ruby dependencies (Fastlane/Bundler)
         run: bundle install
-        working-directory: SonarQube/SonarCube
+        working-directory: SonarQube
         
 
       - name: Run tests with coverage
