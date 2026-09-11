@@ -1,0 +1,56 @@
+name: iOS CI - SonarQube Analysis
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  build-test-analyze:
+    runs-on: macos-14
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Select Xcode version
+        run: sudo xcode-select -s /Applications/Xcode_15.4.app
+
+      - name: Install Ruby dependencies (Fastlane/Bundler)
+        run: bundle install
+
+      - name: Run tests with coverage
+        run: |
+          xcodebuild test \
+            -workspace SwiftUIWrappers.xcworkspace \
+            -scheme SwiftUIWrappers \
+            -destination 'platform=iOS Simulator,name=iPhone 15' \
+            -enableCodeCoverage YES \
+            -resultBundlePath TestResults.xcresult
+
+      - name: Convert coverage to Sonar format
+        run: |
+          xcrun xccov view --report --json TestResults.xcresult > coverage.json
+          curl -o /usr/local/bin/xccov-to-sonarqube-generic \
+            https://raw.githubusercontent.com/SonarSource/sonar-scanning-examples/master/swift-coverage/xccov-to-sonarqube-generic.sh
+          chmod +x /usr/local/bin/xccov-to-sonarqube-generic
+          xccov-to-sonarqube-generic coverage.json > sonarqube-generic-coverage.xml
+
+      - name: Install and run SwiftLint
+        run: |
+          brew install swiftlint
+          swiftlint lint --reporter checkstyle > swiftlint.xml
+
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@v3
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+
+      - name: SonarQube Quality Gate check
+        uses: SonarSource/sonarqube-quality-gate-action@master
+        timeout-minutes: 5
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
