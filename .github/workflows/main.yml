@@ -2,56 +2,92 @@ name: iOS CI - SonarQube Analysis
 
 on:
   push:
-    branches: [main, develop]
+    branches:
+      - main
+      - develop
+
   pull_request:
-    branches: [main, develop]
+    branches:
+      - main
+      - develop
 
 jobs:
   build-test-analyze:
     runs-on: macos-14
+
     steps:
+      # 1. Checkout source code
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Select Xcode version
-        run: sudo xcode-select -s /Applications/Xcode_15.4.app
+      # 2. Show available Xcode versions
+      - name: Show Xcode versions
+        run: |
+          ls -d /Applications/Xcode*.app
+          xcodebuild -version
 
-      - name: Install Ruby dependencies (Fastlane/Bundler)
+      # 3. Select a compatible Xcode
+      - name: Select Xcode
+        run: |
+          sudo xcode-select -s /Applications/Xcode_16.4.app
+          xcodebuild -version
+
+      # 4. Install Ruby dependencies
+      - name: Install Ruby dependencies
         run: bundle install
-        
 
+      # 5. Verify project and scheme
+      - name: Verify Xcode project
+        run: |
+          test -f SonarCube.xcodeproj/project.pbxproj
+          xcodebuild -list -project SonarCube.xcodeproj
+
+      # 6. Run unit/UI tests
       - name: Run tests with coverage
         run: |
           xcodebuild test \
-            -project SonarCube.xcodeproj  \
+            -project SonarCube.xcodeproj \
             -scheme SonarCube \
             -destination 'platform=iOS Simulator,name=iPhone 15' \
             -enableCodeCoverage YES \
             -resultBundlePath TestResults.xcresult
 
-      - name: Convert coverage to Sonar format
+      # 7. Convert Xcode coverage to SonarQube format
+      - name: Convert coverage to SonarQube format
         run: |
           xcrun xccov view --report --json TestResults.xcresult > coverage.json
-          curl -o /usr/local/bin/xccov-to-sonarqube-generic \
-            https://raw.githubusercontent.com/SonarSource/sonar-scanning-examples/master/swift-coverage/xccov-to-sonarqube-generic.sh
-          chmod +x /usr/local/bin/xccov-to-sonarqube-generic
-          xccov-to-sonarqube-generic coverage.json > sonarqube-generic-coverage.xml
 
-      - name: Install and run SwiftLint
+          curl -L \
+            -o xccov-to-sonarqube-generic \
+            https://raw.githubusercontent.com/SonarSource/sonar-scanning-examples/master/swift-coverage/xccov-to-sonarqube-generic.sh
+
+          chmod +x xccov-to-sonarqube-generic
+
+          ./xccov-to-sonarqube-generic coverage.json > sonarqube-generic-coverage.xml
+
+      # 8. Install SwiftLint
+      - name: Install SwiftLint
         run: |
           brew install swiftlint
+
+      # 9. Run SwiftLint
+      - name: Run SwiftLint
+        run: |
           swiftlint lint --reporter checkstyle > swiftlint.xml
 
+      # 10. SonarQube analysis
       - name: SonarQube Scan
-        uses: SonarSource/sonarqube-scan-action@v3
+        uses: SonarSource/sonarqube-scan-action@v4
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
 
-      - name: SonarQube Quality Gate check
-        uses: SonarSource/sonarqube-quality-gate-action@master
+      # 11. Check SonarQube Quality Gate
+      - name: SonarQube Quality Gate
+        uses: SonarSource/sonarqube-quality-gate-action@v1
         timeout-minutes: 5
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
