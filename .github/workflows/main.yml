@@ -17,13 +17,14 @@ jobs:
     runs-on: macos-14
 
     steps:
+
       # 1. Checkout source code
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      # 2. Show Xcode versions available on the GitHub runner
+      # 2. Show available Xcode versions
       - name: Show available Xcode versions
         run: |
           echo "Available Xcode installations:"
@@ -135,25 +136,25 @@ jobs:
             --reporter checkstyle \
             > swiftlint.xml
 
-      # 10. SonarQube analysis
-      - name: SonarQube analysis
+      # 10. SonarCloud analysis
+      - name: SonarCloud analysis
         uses: SonarSource/sonarqube-scan-action@v4
         with:
           args: >
             -Dsonar.projectKey=SonarCube
+            -Dsonar.organization=sai-tarun
             -Dsonar.sources=SonarCube
             -Dsonar.tests=SonarCubeTests,SonarCubeUITests
             -Dsonar.swift.coverage.reportPaths=sonarqube-generic-coverage.xml
             -Dsonar.swiftlint.reportPaths=swiftlint.xml
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+          SONAR_HOST_URL: https://sonarcloud.io
 
-      # 11. SonarQube Quality Gate
-      - name: SonarQube Quality Gate
+      # 11. SonarCloud Quality Gate
+      - name: SonarCloud Quality Gate
         uses: SonarSource/sonarqube-quality-gate-action@v1
         timeout-minutes: 5
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-
+          SONAR_HOST_URL: https://sonarcloud.io
