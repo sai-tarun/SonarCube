@@ -1,0 +1,59 @@
+# This file contains the fastlane.tools configuration
+# You can find the documentation at https://docs.fastlane.tools
+#
+# For a list of all available actions, check out
+#
+#     https://docs.fastlane.tools/actions
+#
+# For a list of all available plugins, check out
+#
+#     https://docs.fastlane.tools/plugins/available-plugins
+#
+
+# Uncomment the line if you want fastlane to automatically update itself
+# update_fastlane
+
+#default_platform(:ios)
+
+#platform :ios do
+  #desc "Description of what the lane does"
+  #lane :custom_lane do
+    # add actions here: https://docs.fastlane.tools/actions
+  #end
+#end
+
+
+
+# This file contains the fastlane.tools configuration
+# You can find the documentation at https://docs.fastlane.tools
+#
+# For a list of all available actions, check out
+#
+#     https://docs.fastlane.tools/actions
+#
+# For a list of all available plugins, check out
+#
+#     https://docs.fastlane.tools/plugins/available-plugins
+#
+
+default_platform(:ios)
+
+platform :ios do
+
+  lane :sonar_analysis do
+    run_tests(
+      project: "SonarCube.xcodeproj",
+      scheme: "SonarCube",
+      devices: ["iPhone 15"],
+      code_coverage: true,
+      result_bundle: true,
+      output_directory: "./test_output"
+    )
+
+    sh("xcrun xccov view --report --json ../test_output/SonarCube.xcresult > ../coverage.json")
+    sh("xccov-to-sonarqube-generic ../coverage.json > ../sonarqube-generic-coverage.xml")
+    sh("swiftlint lint --reporter checkstyle > ../swiftlint.xml")
+    sh("sonar-scanner -Dsonar.token=#{ENV['SONAR_TOKEN']} -Dsonar.host.url=#{ENV['SONAR_HOST_URL']}")
+  end
+
+end
