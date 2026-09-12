@@ -148,7 +148,7 @@ jobs:
             -Dsonar.swift.coverage.reportPaths=sonarqube-generic-coverage.xml
             -Dsonar.swiftlint.reportPaths=swiftlint.xml
         env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.TOKEN }}
           SONAR_HOST_URL: https://sonarcloud.io
 
       # 11. SonarCloud Quality Gate
