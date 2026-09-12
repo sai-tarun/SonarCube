@@ -115,9 +115,12 @@ jobs:
               encoding="utf-8",
               xml_declaration=True
           )
+
+          print("Coverage XML generated successfully.")
           PY
 
-          echo "Coverage XML generated:"
+          echo ""
+          echo "Generated coverage file:"
           ls -lh sonarqube-generic-coverage.xml
 
       # 8. Install SwiftLint
@@ -133,8 +136,15 @@ jobs:
             > swiftlint.xml
 
       # 10. SonarQube analysis
-      - name: SonarQube Scan
+      - name: SonarQube analysis
         uses: SonarSource/sonarqube-scan-action@v4
+        with:
+          args: >
+            -Dsonar.projectKey=SonarCube
+            -Dsonar.sources=SonarCube
+            -Dsonar.tests=SonarCubeTests,SonarCubeUITests
+            -Dsonar.swift.coverage.reportPaths=sonarqube-generic-coverage.xml
+            -Dsonar.swiftlint.reportPaths=swiftlint.xml
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
