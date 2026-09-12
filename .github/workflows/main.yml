@@ -1,3 +1,4 @@
+
 name: iOS CI - SonarQube Analysis
 
 on:
@@ -84,14 +85,40 @@ jobs:
             --json \
             TestResults.xcresult > coverage.json
 
-          curl -L \
-            -o xccov-to-sonarqube-generic.sh \
-            https://raw.githubusercontent.com/SonarSource/sonar-scanning-examples/master/swift-coverage/xccov-to-sonarqube-generic.sh
+          python3 - <<'PY'
+          import json
+          import xml.etree.ElementTree as ET
 
-          chmod +x xccov-to-sonarqube-generic.sh
+          with open("coverage.json") as f:
+              data = json.load(f)
 
-          ./xccov-to-sonarqube-generic.sh \
-            coverage.json > sonarqube-generic-coverage.xml
+          coverage = ET.Element("coverage")
+
+          for target in data.get("targets", []):
+              for file in target.get("files", []):
+                  file_path = file.get("path", "")
+                  line_rate = file.get("lineCoverage", 0)
+
+                  ET.SubElement(
+                      coverage,
+                      "file",
+                      {
+                          "path": file_path,
+                          "line-rate": str(line_rate)
+                      }
+                  )
+
+          tree = ET.ElementTree(coverage)
+
+          tree.write(
+              "sonarqube-generic-coverage.xml",
+              encoding="utf-8",
+              xml_declaration=True
+          )
+          PY
+
+          echo "Coverage XML generated:"
+          ls -lh sonarqube-generic-coverage.xml
 
       # 8. Install SwiftLint
       - name: Install SwiftLint
@@ -119,3 +146,4 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+
