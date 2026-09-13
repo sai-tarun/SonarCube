@@ -1,5 +1,4 @@
-
-name: iOS CI - SonarQube Analysis
+name: iOS CI - SonarCloud Analysis
 
 on:
   push:
@@ -78,8 +77,8 @@ jobs:
             -enableCodeCoverage YES \
             -resultBundlePath TestResults.xcresult
 
-      # 7. Convert Xcode coverage to SonarQube format
-      - name: Convert coverage to SonarQube format
+      # 7. Convert Xcode coverage to SonarCloud format
+      - name: Convert coverage to SonarCloud format
         run: |
           xcrun xccov view \
             --report \
@@ -136,7 +135,19 @@ jobs:
             --reporter checkstyle \
             > swiftlint.xml
 
-      # 10. SonarCloud analysis
+      # 10. Check whether GitHub provides the SonarCloud token
+      - name: Check SonarCloud token
+        env:
+          SONAR_TOKEN: ${{ secrets.TOKEN }}
+        run: |
+          if [ -z "$SONAR_TOKEN" ]; then
+            echo "SONAR_TOKEN is EMPTY or NOT AVAILABLE"
+            exit 1
+          else
+            echo "SONAR_TOKEN is available"
+          fi
+
+      # 11. SonarCloud analysis
       - name: SonarCloud analysis
         uses: SonarSource/sonarqube-scan-action@v4
         with:
@@ -151,7 +162,7 @@ jobs:
           SONAR_TOKEN: ${{ secrets.TOKEN }}
           SONAR_HOST_URL: https://sonarcloud.io
 
-      # 11. SonarCloud Quality Gate
+      # 12. SonarCloud Quality Gate
       - name: SonarCloud Quality Gate
         uses: SonarSource/sonarqube-quality-gate-action@v1
         timeout-minutes: 5
