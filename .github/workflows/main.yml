@@ -135,7 +135,7 @@ jobs:
             --reporter checkstyle \
             > swiftlint.xml
 
-      # 10. Check SonarCloud token exists
+      # 10. Check SonarCloud token
       - name: Check SonarCloud token
         env:
           SONAR_TOKEN: ${{ secrets.TOKEN }}
@@ -143,17 +143,15 @@ jobs:
           if [ -z "$SONAR_TOKEN" ]; then
             echo "SONAR_TOKEN is EMPTY or NOT AVAILABLE"
             exit 1
-          else
-            echo "SONAR_TOKEN is available"
           fi
 
-      # 11. Test SonarCloud API authentication
+          echo "SONAR_TOKEN is available"
+
+      # 11. Test SonarCloud authentication
       - name: Test SonarCloud API access
         env:
           SONAR_TOKEN: ${{ secrets.TOKEN }}
         run: |
-          echo "Testing SonarCloud API..."
-
           HTTP_CODE=$(curl -s \
             -o /tmp/sonar-response.txt \
             -w "%{http_code}" \
@@ -174,6 +172,7 @@ jobs:
       - name: SonarCloud analysis
         uses: SonarSource/sonarqube-scan-action@v4
         with:
+          scannerVersion: 6.2.0.4584
           args: >
             -Dsonar.projectKey=SonarCube
             -Dsonar.organization=sai-tarun
