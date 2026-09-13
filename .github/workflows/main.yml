@@ -147,23 +147,28 @@ jobs:
             echo "SONAR_TOKEN is available"
           fi
 
-      # 11. Verify SonarCloud authentication
-      - name: Check SonarCloud authentication
+      # 11. Test SonarCloud API authentication
+      - name: Test SonarCloud API access
         env:
           SONAR_TOKEN: ${{ secrets.TOKEN }}
         run: |
-          RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" \
+          echo "Testing SonarCloud API..."
+
+          HTTP_CODE=$(curl -s \
+            -o /tmp/sonar-response.txt \
+            -w "%{http_code}" \
             -u "$SONAR_TOKEN:" \
             https://sonarcloud.io/api/authentication/validate)
 
-          echo "SonarCloud authentication response: $RESPONSE"
+          echo "Authentication API response: $HTTP_CODE"
 
-          if [ "$RESPONSE" != "200" ]; then
-            echo "SonarCloud token authentication failed."
+          if [ "$HTTP_CODE" = "200" ]; then
+            echo "SonarCloud authentication SUCCESS"
+          else
+            echo "SonarCloud authentication FAILED"
+            cat /tmp/sonar-response.txt
             exit 1
           fi
-
-          echo "SonarCloud token authentication successful."
 
       # 12. SonarCloud analysis
       - name: SonarCloud analysis
@@ -178,7 +183,6 @@ jobs:
             -Dsonar.swiftlint.reportPaths=swiftlint.xml
         env:
           SONAR_TOKEN: ${{ secrets.TOKEN }}
-          
 
       # 13. SonarCloud Quality Gate
       - name: SonarCloud Quality Gate
@@ -186,4 +190,3 @@ jobs:
         timeout-minutes: 5
         env:
           SONAR_TOKEN: ${{ secrets.TOKEN }}
-         
