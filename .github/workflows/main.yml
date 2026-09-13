@@ -135,7 +135,7 @@ jobs:
             --reporter checkstyle \
             > swiftlint.xml
 
-      # 10. Check whether GitHub provides the SonarCloud token
+      # 10. Check SonarCloud token exists
       - name: Check SonarCloud token
         env:
           SONAR_TOKEN: ${{ secrets.TOKEN }}
@@ -147,7 +147,25 @@ jobs:
             echo "SONAR_TOKEN is available"
           fi
 
-      # 11. SonarCloud analysis
+      # 11. Verify SonarCloud authentication
+      - name: Check SonarCloud authentication
+        env:
+          SONAR_TOKEN: ${{ secrets.TOKEN }}
+        run: |
+          RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" \
+            -u "$SONAR_TOKEN:" \
+            https://sonarcloud.io/api/authentication/validate)
+
+          echo "SonarCloud authentication response: $RESPONSE"
+
+          if [ "$RESPONSE" != "200" ]; then
+            echo "SonarCloud token authentication failed."
+            exit 1
+          fi
+
+          echo "SonarCloud token authentication successful."
+
+      # 12. SonarCloud analysis
       - name: SonarCloud analysis
         uses: SonarSource/sonarqube-scan-action@v4
         with:
@@ -162,7 +180,7 @@ jobs:
           SONAR_TOKEN: ${{ secrets.TOKEN }}
           SONAR_HOST_URL: https://sonarcloud.io
 
-      # 12. SonarCloud Quality Gate
+      # 13. SonarCloud Quality Gate
       - name: SonarCloud Quality Gate
         uses: SonarSource/sonarqube-quality-gate-action@v1
         timeout-minutes: 5
