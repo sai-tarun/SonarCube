@@ -178,7 +178,7 @@ jobs:
             -Dsonar.swiftlint.reportPaths=swiftlint.xml
         env:
           SONAR_TOKEN: ${{ secrets.TOKEN }}
-          SONAR_HOST_URL: https://sonarcloud.io
+          
 
       # 13. SonarCloud Quality Gate
       - name: SonarCloud Quality Gate
@@ -186,4 +186,4 @@ jobs:
         timeout-minutes: 5
         env:
           SONAR_TOKEN: ${{ secrets.TOKEN }}
-          SONAR_HOST_URL: https://sonarcloud.io
+         
